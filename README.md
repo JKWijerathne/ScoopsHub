@@ -1,128 +1,188 @@
 # ScoopsHub
 
-ScoopsHub is an ice cream parlor management system backend built with Laravel and MySQL for the Delivergate Backend Engineer Intern Practical Exam.
+ScoopsHub is a REST API for managing an ice cream parlour's items and customers. It was developed using Laravel, MySQL and Laravel Sanctum for the Delivergate Backend Engineer Intern Practical Exam.
 
-## Database Setup & Configuration
+## Features
+
+- Token-based authentication with Laravel Sanctum
+- Role-based access control for owners, managers and cashiers
+- Item management, including stock quantities and prices
+- Customer management, with optional email and phone details
+- Search items by name and customers by name or email
+- Input validation and consistent JSON responses
+- Feature tests for authentication, permissions and CRUD operations
+
+## Tech Stack
+
+- **Backend:** PHP 8.3+, Laravel 13
+- **Database:** MySQL 8.0+
+- **Authentication:** Laravel Sanctum
+- **Testing:** PHPUnit / Laravel testing tools
+- **Additional driver:** SQLite for automated tests
+
+## Getting Started
 
 ### Prerequisites
-- PHP >= 8.3 with `pdo_mysql` enabled
-- Composer >= 2.x
-- MySQL server (e.g., via Laragon) running on `127.0.0.1:3306`
 
-### Environment Configuration
-1. Copy `.env.example` to `.env` if not already present:
-   ```sh
-   cp .env.example .env
-   ```
-2. Verify or update the MySQL database configuration in `.env`:
-   ```env
-   DB_CONNECTION=mysql
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
-   DB_DATABASE=scoopshub
-   DB_USERNAME=root
-   DB_PASSWORD=
-   ```
-3. Generate the application key if not already generated:
-   ```sh
-   php artisan key:generate
-   ```
+Make sure you have the following installed:
 
-### Running Migrations
-Run all database migrations to establish the schema:
-```sh
+- PHP 8.3 or later, with `pdo_mysql` and `pdo_sqlite` enabled
+- Composer 2.x or later
+- MySQL 8.0 or later
+
+### 1. Get the project ready
+
+Clone the repository and open its directory:
+
+```bash
+git clone <repository-url>
+cd ScoopsHub
+```
+
+Install the PHP dependencies:
+
+```bash
+composer install
+```
+
+### 2. Configure the environment
+
+Copy `.env.example` to `.env`. On Windows, you can use:
+
+```bat
+copy .env.example .env
+```
+
+On macOS or Linux, use:
+
+```bash
+cp .env.example .env
+```
+
+Generate the application key:
+
+```bash
+php artisan key:generate
+```
+
+Update the database settings in `.env` to match your local MySQL configuration:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=scoopshub
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Create a MySQL database named `scoopshub` before running the migrations. If your MySQL installation uses a password, set `DB_PASSWORD` accordingly.
+
+**Note:** These are example local-development settings. Use your own database credentials and never commit your `.env` file.
+
+### 3. Run migrations and seed the database
+
+Create the tables:
+
+```bash
 php artisan migrate
 ```
 
-### Starting Development Server
-Start the local Laravel development server:
-```sh
+Create the development accounts:
+
+```bash
+php artisan db:seed
+```
+
+The seeder creates the following accounts for local testing:
+
+| Role | Email | Password |
+|---|---|---|
+| Owner | `owner@scoopshub.test` | `Owner123!` |
+| Manager | `manager@scoopshub.test` | `Manager123!` |
+| Cashier | `cashier@scoopshub.test` | `Cashier123!` |
+
+These credentials are for development only. Do not use them in a production environment.
+
+### 4. Start the server
+
+Run:
+
+```bash
 php artisan serve
 ```
-By default, the API will be available at `http://127.0.0.1:8000`.
 
-## API Authentication & Authorization (Phase 3)
+By default, the API is available at `http://127.0.0.1:8000`.
 
-### Overview
-Authentication is implemented via **Laravel Sanctum** personal access tokens. Role-based authorization is enforced on the backend via the `EnsureUserHasRole` middleware (alias: `role`). Unauthenticated requests to API endpoints return HTTP `401 Unauthorized` as JSON.
+Keep the terminal running while you test the endpoints. If PHP is not available on your system PATH, run Artisan using the full path to your PHP executable.
 
-### Endpoints
+## Authentication
 
-#### 1. Login
-- **Method & URL:** `POST /api/auth/login`
-- **Access:** Public
-- **Headers:** `Content-Type: application/json`, `Accept: application/json`
-- **Request Body:**
-  ```json
-  {
+Login is required before accessing protected API endpoints. Send the login request with JSON data.
+
+### Login
+
+`POST /api/auth/login`
+
+Request:
+
+```json
+{
+  "email": "owner@scoopshub.test",
+  "password": "Owner123!"
+}
+```
+
+A successful login returns a Sanctum bearer token and the authenticated user's details.
+
+Example response:
+
+```json
+{
+  "message": "Login successful",
+  "token": "1|your-token",
+  "token_type": "Bearer",
+  "user": {
+    "id": 1,
+    "name": "ScoopsHub Owner",
     "email": "owner@scoopshub.test",
-    "password": "Owner123!"
+    "role": "owner"
   }
-  ```
-- **Responses:**
-  - `200 OK` (Success):
-    ```json
-    {
-      "message": "Login successful",
-      "token": "1|abcdef123456...",
-      "token_type": "Bearer",
-      "user": {
-        "id": 1,
-        "name": "ScoopsHub Owner",
-        "email": "owner@scoopshub.test",
-        "role": "owner"
-      }
-    }
-    ```
-  - `401 Unauthorized` (Invalid credentials):
-    ```json
-    {
-      "message": "Invalid credentials"
-    }
-    ```
-  - `422 Unprocessable Entity` (Validation failure):
-    ```json
-    {
-      "message": "The email field is required.",
-      "errors": {
-        "email": ["The email field is required."]
-      }
-    }
-    ```
+}
+```
 
-#### 2. Authenticated User Profile
-- **Method & URL:** `GET /api/auth/me` (or `GET /api/user`)
-- **Access:** Authenticated (Bearer Token required)
-- **Header:** `Authorization: Bearer <token>`
-- **Response `200 OK`:**
-  ```json
-  {
-    "user": {
-      "id": 1,
-      "name": "ScoopsHub Owner",
-      "email": "owner@scoopshub.test",
-      "role": "owner"
-    }
-  }
-  ```
+Use the actual token returned by your login request. The token shown above is only an example.
 
-#### 3. Logout
-- **Method & URL:** `POST /api/auth/logout`
-- **Access:** Authenticated (Bearer Token required)
-- **Header:** `Authorization: Bearer <token>`
-- **Response `200 OK`:**
-  ```json
-  {
-    "message": "Logged out successfully"
-  }
-  ```
-  *(Revokes the current access token only, without invalidating tokens on other client devices.)*
+### Authenticated profile
 
-### Roles & Permissions Matrix
-The application defines three roles: `owner`, `manager`, and `cashier`. Role checks are applied via the `role:<roles>` middleware.
+`GET /api/auth/me`
 
-| Permission | Owner | Manager | Cashier |
-|---|---|---|---|
+Returns the authenticated user's profile. The legacy `GET /api/user` endpoint is also available.
+
+### Logout
+
+`POST /api/auth/logout`
+
+Revokes the current access token.
+
+### Headers for protected endpoints
+
+Include these headers in requests that require authentication:
+
+```http
+Authorization: Bearer <your-token>
+Accept: application/json
+Content-Type: application/json
+```
+
+For requests without a JSON body, `Content-Type` is generally unnecessary.
+
+## Roles and Permissions
+
+The API uses role-based middleware to restrict operations.
+
+| Operation | Owner | Manager | Cashier |
+|---|:---:|:---:|:---:|
 | View items | Yes | Yes | Yes |
 | Create items | Yes | Yes | No |
 | Update items | Yes | Yes | Yes |
@@ -132,76 +192,140 @@ The application defines three roles: `owner`, `manager`, and `cashier`. Role che
 | Update customers | Yes | Yes | Yes |
 | Delete customers | Yes | No | No |
 
-- Authenticated users without the required role receive `403 Forbidden` (`{"message": "Forbidden. You do not have permission to access this resource."}`).
-- Unauthenticated requests receive `401 Unauthorized` (`{"message": "Unauthenticated."}`).
+Requests made by authenticated users without the required permission return `403 Forbidden`.
 
-### Running Automated Tests
-Run the PHPUnit feature test suite covering login, token authentication, and role authorization:
-```sh
+## API Endpoints
+
+All item and customer endpoints below require authentication.
+
+### Items
+
+| Method | Endpoint | Description | Permission |
+|---|---|---|---|
+| GET | `/api/items` | List items | All roles |
+| GET | `/api/items/{id}` | View an item | All roles |
+| POST | `/api/items` | Create an item | Owner, Manager |
+| PUT | `/api/items/{id}` | Replace an item's details | All roles |
+| PATCH | `/api/items/{id}` | Update selected fields | All roles |
+| DELETE | `/api/items/{id}` | Delete an item | Owner |
+
+To search by item name, add the `search` query parameter:
+
+```http
+GET /api/items?search=chocolate
+```
+
+Example create request:
+
+```json
+{
+  "name": "Strawberry Sorbet",
+  "description": "Dairy-free strawberry sorbet",
+  "price": 380.00,
+  "stock_quantity": 15
+}
+```
+
+Item validation includes a required name, a non-negative price with up to two decimal places, and a non-negative integer stock quantity. The description is optional.
+
+### Customers
+
+| Method | Endpoint | Description | Permission |
+|---|---|---|---|
+| GET | `/api/customers` | List customers | All roles |
+| GET | `/api/customers/{id}` | View a customer | All roles |
+| POST | `/api/customers` | Create a customer | All roles |
+| PUT | `/api/customers/{id}` | Replace customer details | All roles |
+| PATCH | `/api/customers/{id}` | Update selected fields | All roles |
+| DELETE | `/api/customers/{id}` | Delete a customer | Owner |
+
+Customer search supports a partial name or email match:
+
+```http
+GET /api/customers?search=amali
+```
+
+Example create request:
+
+```json
+{
+  "name": "Amali Fernando",
+  "email": "amali@example.com",
+  "phone": "0719876543"
+}
+```
+
+Only the customer's name is required. Email and phone are optional; when supplied, the email must be valid and unique.
+
+### Update requests
+
+Use `PUT` to submit all required fields for an update, or `PATCH` to change only selected fields.
+
+For example, a partial item update can contain:
+
+```json
+{
+  "stock_quantity": 50
+}
+```
+
+### Response status codes
+
+The API uses standard HTTP status codes:
+
+| Status | Meaning |
+|---|---|
+| `200 OK` | Request completed successfully |
+| `201 Created` | Resource created |
+| `401 Unauthorized` | Authentication is missing or invalid |
+| `403 Forbidden` | User lacks the required permission |
+| `404 Not Found` | Requested resource does not exist |
+| `422 Unprocessable Content` | Request validation failed |
+
+Validation failures include an `errors` object describing the invalid fields.
+
+## Running Tests
+
+Run the full test suite with:
+
+```bash
 php artisan test
 ```
 
-### Known Limitations
-- Item and customer CRUD operations belong to the next phase (Phase 4). Role authorization middleware is registered and ready to protect those controllers.
-- Tokens currently have no automatic expiration configured (`config/sanctum.php` default); token lifetime can be customized if needed.
-
----
-
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
-
-## About Laravel
-
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+To run individual test suites:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+php artisan test tests/Feature/ItemApiTest.php
+php artisan test tests/Feature/CustomerApiTest.php
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Authentication tests are located under `tests/Feature/Auth`.
 
-## Contributing
+The test environment is configured to use an in-memory SQLite database, keeping automated tests separate from the MySQL development database.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Project Structure
 
-## Code of Conduct
+```text
+app/
+  Http/
+    Controllers/
+      Api/
+    Middleware/
+  Models/
+database/
+  factories/
+  migrations/
+  seeders/
+routes/
+  api.php
+tests/
+  Feature/
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- `routes/api.php` defines the API routes.
+- `app/Http/Controllers/Api/` contains the API controllers.
+- `app/Http/Middleware/` contains role-checking middleware.
+- `app/Models/` contains the Eloquent models.
+- `database/migrations/` defines the database schema.
+- `database/seeders/` contains development seed data.
+- `tests/Feature/` contains API feature tests.
