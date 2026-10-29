@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "e58fa26b-12d4-4bb5-953b-e1b9f71c4c92",
     "name": "ScoopsHub API",
-    "description": "Official Postman Collection for ScoopsHub REST API (Delivergate Backend Engineer Intern Practical Exam).\n\n### Overview\nScoopsHub is an ice cream parlour management API built with Laravel 13, MySQL, and Laravel Sanctum.\n\n### Getting Started\n1. Ensure the local server is running at `http://127.0.0.1:8000` (or update `base_url`).\n2. Open the **Authentication** folder and send **Login as Owner** (or Manager/Cashier).\n3. The test script automatically captures the returned token and stores it in the `bearer_token` collection variable.\n4. Subsequent requests in **Items** and **Customers** folders use `{{bearer_token}}` automatically.\n5. When testing role-restricted operations (e.g. DELETE requires Owner), switch your active user by running the corresponding Login request.",
+    "description": "Official Postman Collection for ScoopsHub REST API (Delivergate Backend Engineer Intern Practical Exam).\n\n### Overview\nScoopsHub is an ice cream parlour management API built with Laravel 13, MySQL, and Laravel Sanctum.\n\n### Getting Started\n1. Ensure the local server is running at http://127.0.0.1:8000 (or update base_url).\n2. Run the Owner, Manager, and Cashier login requests. Each saves a separate role token.\n3. Protected requests explicitly use the role needed for that operation. Creation requests save generated IDs for later requests.\n4. Logout is last in the collection.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -13,22 +13,31 @@
       "description": "Local API server base URL"
     },
     {
-      "key": "bearer_token",
-      "value": "",
-      "type": "string",
-      "description": "Sanctum bearer token populated automatically upon login"
-    },
-    {
       "key": "item_id",
-      "value": "1",
+      "value": "",
       "type": "string",
       "description": "Item ID used for show, update, and delete tests. Populated by Create Item."
     },
     {
       "key": "customer_id",
-      "value": "1",
+      "value": "",
       "type": "string",
       "description": "Customer ID used for show, update, and delete tests. Populated by Create Customer."
+    },
+    {
+      "key": "owner_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "manager_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cashier_token",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -42,20 +51,17 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Response has Sanctum token and Bearer type\", function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json).to.have.property(\"token\");",
-                  "    pm.expect(json.token_type).to.eql(\"Bearer\");",
-                  "    pm.expect(json.user.role).to.eql(\"owner\");",
-                  "    pm.collectionVariables.set(\"bearer_token\", json.token);",
+                  "pm.test(\"owner login succeeds\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(json.token_type).to.eql(\"Bearer\");",
+                  "  pm.expect(json.user.role).to.eql(\"owner\");",
+                  "  pm.collectionVariables.set(\"owner_token\", json.token);",
                   "});"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
           ],
@@ -86,8 +92,9 @@
                 "login"
               ]
             },
-            "description": "Authenticates as Owner. The test script saves the Sanctum bearer token to `{{bearer_token}}`."
-          }
+            "description": "Authenticates as owner. Saves the token to {{owner_token}}."
+          },
+          "description": "Authenticates as owner. Saves the token to {{owner_token}}."
         },
         {
           "name": "2. Login as Manager",
@@ -95,19 +102,17 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Response has Sanctum token and Manager role\", function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json).to.have.property(\"token\");",
-                  "    pm.expect(json.user.role).to.eql(\"manager\");",
-                  "    pm.collectionVariables.set(\"bearer_token\", json.token);",
+                  "pm.test(\"manager login succeeds\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(json.token_type).to.eql(\"Bearer\");",
+                  "  pm.expect(json.user.role).to.eql(\"manager\");",
+                  "  pm.collectionVariables.set(\"manager_token\", json.token);",
                   "});"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
           ],
@@ -138,8 +143,9 @@
                 "login"
               ]
             },
-            "description": "Authenticates as Manager. Stores the token in `{{bearer_token}}` to test management permissions."
-          }
+            "description": "Authenticates as manager. Saves the token to {{manager_token}}."
+          },
+          "description": "Authenticates as manager. Saves the token to {{manager_token}}."
         },
         {
           "name": "3. Login as Cashier",
@@ -147,19 +153,17 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Response has Sanctum token and Cashier role\", function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json).to.have.property(\"token\");",
-                  "    pm.expect(json.user.role).to.eql(\"cashier\");",
-                  "    pm.collectionVariables.set(\"bearer_token\", json.token);",
+                  "pm.test(\"cashier login succeeds\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.token).to.be.a(\"string\").and.not.empty;",
+                  "  pm.expect(json.token_type).to.eql(\"Bearer\");",
+                  "  pm.expect(json.user.role).to.eql(\"cashier\");",
+                  "  pm.collectionVariables.set(\"cashier_token\", json.token);",
                   "});"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
           ],
@@ -190,8 +194,9 @@
                 "login"
               ]
             },
-            "description": "Authenticates as Cashier. Stores the token in `{{bearer_token}}` to test cashier permissions."
-          }
+            "description": "Authenticates as cashier. Saves the token to {{cashier_token}}."
+          },
+          "description": "Authenticates as cashier. Saves the token to {{cashier_token}}."
         },
         {
           "name": "4. Login with Invalid Credentials (401)",
@@ -322,7 +327,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -369,7 +374,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -387,52 +392,6 @@
               ]
             },
             "description": "Legacy Sanctum user endpoint maintained for compatibility."
-          }
-        },
-        {
-          "name": "8. Logout (Revoke Token)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Logged out message returned\", function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json.message).to.eql(\"Logged out successfully\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/auth/logout",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "logout"
-              ]
-            },
-            "description": "Revokes the active bearer token. Subsequent calls with this token will return 401."
           }
         }
       ]
@@ -467,7 +426,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -513,7 +472,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -567,7 +526,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Content-Type",
@@ -621,7 +580,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -668,7 +627,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{manager_token}}"
               },
               {
                 "key": "Content-Type",
@@ -723,7 +682,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{cashier_token}}"
               },
               {
                 "key": "Content-Type",
@@ -753,22 +712,18 @@
           }
         },
         {
-          "name": "7. Delete Item - Restriction Probe (Manager/Cashier 403)",
+          "name": "Delete Item as Manager (403)",
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 403 Forbidden for non-owners\", function () {",
-                  "    pm.response.to.have.status(403);",
-                  "});",
-                  "",
-                  "pm.test(\"Message contains Forbidden notice\", function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json.message).to.include(\"Forbidden\");",
+                  "pm.test(\"Manager cannot delete items\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "  pm.expect(pm.response.json().message).to.include(\"Forbidden\");",
                   "});"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
           ],
@@ -777,7 +732,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{manager_token}}"
               },
               {
                 "key": "Accept",
@@ -799,7 +754,98 @@
           }
         },
         {
-          "name": "8. Delete Item as Owner (200)",
+          "name": "Delete Item as Cashier (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Cashier cannot delete items\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "  pm.expect(pm.response.json().message).to.include(\"Forbidden\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cashier_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/items/{{item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{item_id}}"
+              ]
+            },
+            "description": "Run this while logged in as Cashier or Manager to confirm deletion is blocked with HTTP 403."
+          }
+        },
+        {
+          "name": "Create Item as Cashier (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Cashier cannot create items\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "  pm.expect(pm.response.json().message).to.include(\"Forbidden\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cashier_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Belgian Dark Chocolate Gelato\",\n  \"description\": \"Rich 70% cocoa artisanal dark chocolate gelato\",\n  \"price\": 450,\n  \"stock_quantity\": 25\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items"
+              ]
+            },
+            "description": "**Creates a record.** Permitted for Owner and Manager. Automatically updates the `{{item_id}}` variable."
+          }
+        },
+        {
+          "name": "Delete Item as Owner (200)",
           "event": [
             {
               "listen": "test",
@@ -823,7 +869,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -869,7 +915,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -918,7 +964,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Content-Type",
@@ -978,7 +1024,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -1024,7 +1070,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -1071,6 +1117,15 @@
                 ],
                 "type": "text/javascript"
               }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"customer_email\", \"scoopshub-\" + Date.now() + \"-\" + Math.random().toString(36).slice(2, 8) + \"@example.test\");"
+                ]
+              }
             }
           ],
           "request": {
@@ -1078,7 +1133,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{cashier_token}}"
               },
               {
                 "key": "Content-Type",
@@ -1091,7 +1146,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Kamal Perera\",\n  \"email\": \"kamal.perera@example.com\",\n  \"phone\": \"0771234567\"\n}"
+              "raw": "{\n  \"name\": \"Kamal Perera\",\n  \"email\": \"{{customer_email}}\",\n  \"phone\": \"0771234567\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/customers",
@@ -1132,7 +1187,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -1180,7 +1235,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{manager_token}}"
               },
               {
                 "key": "Content-Type",
@@ -1235,7 +1290,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{cashier_token}}"
               },
               {
                 "key": "Content-Type",
@@ -1265,22 +1320,18 @@
           }
         },
         {
-          "name": "7. Delete Customer - Restriction Probe (Manager/Cashier 403)",
+          "name": "Delete Customer as Manager (403)",
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 403 Forbidden for non-owners\", function () {",
-                  "    pm.response.to.have.status(403);",
-                  "});",
-                  "",
-                  "pm.test(\"Message contains Forbidden notice\", function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json.message).to.include(\"Forbidden\");",
+                  "pm.test(\"Manager cannot delete customers\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "  pm.expect(pm.response.json().message).to.include(\"Forbidden\");",
                   "});"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
           ],
@@ -1289,7 +1340,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{manager_token}}"
               },
               {
                 "key": "Accept",
@@ -1311,7 +1362,49 @@
           }
         },
         {
-          "name": "8. Delete Customer as Owner (200)",
+          "name": "Delete Customer as Cashier (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Cashier cannot delete customers\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "  pm.expect(pm.response.json().message).to.include(\"Forbidden\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cashier_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customers/{{customer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                "{{customer_id}}"
+              ]
+            },
+            "description": "Run this while logged in as Cashier or Manager to confirm customer deletion is rejected with HTTP 403."
+          }
+        },
+        {
+          "name": "Delete Customer as Owner (200)",
           "event": [
             {
               "listen": "test",
@@ -1335,7 +1428,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -1381,7 +1474,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Accept",
@@ -1429,7 +1522,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{bearer_token}}"
+                "value": "Bearer {{owner_token}}"
               },
               {
                 "key": "Content-Type",
@@ -1455,6 +1548,57 @@
               ]
             },
             "description": "Tests rejection of empty customer name and invalid email format."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Final Logout",
+      "item": [
+        {
+          "name": "Logout (Revoke Owner Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Logged out message returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Logged out successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{owner_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Revokes the active bearer token. Subsequent calls with this token will return 401."
           }
         }
       ]

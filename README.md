@@ -10,25 +10,24 @@ ScoopsHub is a RESTful API backend for managing an ice cream parlour's inventory
   - [docs/er-diagram.md](docs/er-diagram.md) (Interactive Mermaid source for GitHub Markdown preview)
   - [docs/er-diagram.png](docs/er-diagram.png) (Rendered visual diagram image)
 - **Postman Collection (v2.1):**
-  - [docs/ScoopsHub.postman_collection.json](docs/ScoopsHub.postman_collection.json) (28 automated requests covering Auth, Items, Customers, RBAC restrictions, and validations)
+  - [docs/ScoopsHub.postman_collection.json](docs/ScoopsHub.postman_collection.json) (31 requests covering Auth, Items, Customers, RBAC restrictions, and validation)
+- **Submission Summary:** [docs/ScoopsHub-Submission-Document.md](docs/ScoopsHub-Submission-Document.md)
 
 ---
 
 ## Features
 
-- **Token-based Authentication:** Secure API authentication via Laravel Sanctum bearer tokens.
-- **Role-Based Access Control (RBAC):** Three distinct roles (`owner`, `manager`, `cashier`) with granular permissions enforced by custom middleware.
-- **Inventory Management (Items):** Full CRUD for parlour items with decimal pricing (`DECIMAL(10,2)`), non-negative stock counts, optional descriptions, and name search.
-- **Customer Management:** Full CRUD for customer profiles with optional phone numbers, unique optional email addresses, and search across name and email.
-- **Dual Update Semantics:** Support for both full resource replacement (`PUT`) and partial field modification (`PATCH`).
-- **Standardized Error Handling:** Consistent JSON status codes (`401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `422 Unprocessable Content`).
-- **Comprehensive Automated Test Suite:** 80 automated feature and unit tests with 411 assertions running on an isolated in-memory SQLite database.
+- **Authentication:** Laravel Sanctum bearer tokens. Login returns a token; subsequent requests include it as `Authorization: Bearer <token>`.
+- **Role-based access control:** Three roles — `owner`, `manager`, `cashier` — enforced by a custom middleware alias (`role`). Unauthorized role → `403 Forbidden`.
+- **Items CRUD:** Create, read, update (PUT/PATCH), delete, and search by name. Prices are stored as `DECIMAL(10,2)`; stock is a non-negative integer.
+- **Customers CRUD:** Create, read, update (PUT/PATCH), delete, and search by name or email. Email is optional but must be a valid format and unique when supplied.
+- **Error responses:** All error and validation responses return JSON, including when no `Accept: application/json` header is sent on `/api/*` routes.
 
 ---
 
 ## Tech Stack & System Requirements
 
-- **PHP:** `^8.3` (tested with PHP 8.3.36, `pdo_mysql`, `pdo_sqlite`, `openssl`, `mbstring`, `fileinfo`)
+- **PHP:** `^8.3` (`pdo_mysql`, `pdo_sqlite`, `openssl`, `mbstring`, and `fileinfo` are required)
 - **Framework:** Laravel 13.x (with Laravel Sanctum 4.x)
 - **Database:** MySQL 8.0+ (development) / SQLite `:memory:` (testing)
 - **Package Manager:** Composer 2.x+
@@ -53,7 +52,13 @@ Install Composer dependencies:
 composer install
 ```
 
-*(On Windows with Laragon, if Composer is not in your system PATH: `C:\laragon\bin\composer\composer.bat install`)*
+On Windows, run these commands from PowerShell or Command Prompt after PHP and Composer are available in your PATH.
+
+> If `php` and `composer` are not on your PATH (common on Laragon), use their full paths:
+> ```powershell
+> C:\laragon\bin\php\php-8.3.36-Win32-vs16-x64\php.exe -r "readfile('https://getcomposer.org/installer');" | php
+> C:\laragon\bin\composer\composer.bat install
+> ```
 
 ### 2. Configure Environment Variables
 
@@ -124,9 +129,6 @@ Start Laravel's built-in development server:
 ```bash
 php artisan serve
 ```
-
-*(On Windows with Laragon if `php` is not globally aliased:*
-`C:\laragon\bin\php\php-8.3.36-Win32-vs16-x64\php.exe artisan serve`*)*
 
 By default, the API will be available at:
 `http://127.0.0.1:8000`
@@ -232,7 +234,7 @@ All item endpoints require authentication (`auth:sanctum`).
 
 #### List & Search Items
 - **`GET /api/items`**: Returns all items.
-- **`GET /api/items?search={term}`**: Filters items whose name contains `{term}` (case-insensitive partial match).
+- **`GET /api/items?search={term}`**: Filters items whose name contains `{term}` (database-collation-dependent partial match).
 
 **Example Response (`200 OK`):**
 ```json
@@ -410,7 +412,7 @@ The API returns consistent, descriptive JSON error messages:
 |---|---|---|
 | **`200 OK`** | Request succeeded | `{"message": "Item updated successfully", "data": {...}}` |
 | **`201 Created`** | Resource successfully created | `{"message": "Item created successfully", "data": {...}}` |
-| **`401 Unauthorized`** | Missing, expired, or invalid token | `{"message": "Unauthenticated."}` |
+| **`401 Unauthorized`** | Missing, invalid, or revoked token (automatic token expiry is not configured) | `{"message": "Unauthenticated."}` |
 | **`403 Forbidden`** | Authenticated user lacks role permissions | `{"message": "Forbidden. You do not have permission to access this resource."}` |
 | **`404 Not Found`** | Resource record does not exist | `{"message": "Item not found"}` |
 | **`422 Unprocessable Content`** | Request body failed validation rules | *See example below* |
@@ -437,7 +439,7 @@ The API returns consistent, descriptive JSON error messages:
 
 ## Running Automated Tests
 
-ScoopsHub includes a comprehensive automated test suite. Automated tests execute against an isolated **in-memory SQLite database** (`:memory:`) defined in `phpunit.xml`, ensuring your MySQL database is untouched.
+Tests run against an isolated **in-memory SQLite database** (`:memory:`) configured in `phpunit.xml`. The MySQL development database is not touched.
 
 To execute the complete test suite:
 
@@ -445,15 +447,14 @@ To execute the complete test suite:
 php artisan test
 ```
 
-*(On Windows with Laragon):*
+On Windows with Laragon if `php` is not in your PATH:
 ```powershell
 C:\laragon\bin\php\php-8.3.36-Win32-vs16-x64\php.exe artisan test
 ```
 
-To run individual test files or suites:
+To run individual files:
 
 ```bash
-# Feature tests
 php artisan test tests/Feature/ItemApiTest.php
 php artisan test tests/Feature/CustomerApiTest.php
 php artisan test tests/Feature/Auth/LoginTest.php
@@ -461,7 +462,7 @@ php artisan test tests/Feature/Auth/AuthenticationTest.php
 php artisan test tests/Feature/Auth/AuthorizationTest.php
 ```
 
-### Verified Test Results
+### Test results (last run)
 - **Tests:** 80 passed
 - **Assertions:** 411 passed
 - **Failures:** 0
@@ -476,14 +477,12 @@ A ready-to-import Postman collection is provided in `docs/ScoopsHub.postman_coll
 1. Open **Postman** and click **Import**.
 2. Select `docs/ScoopsHub.postman_collection.json`.
 3. In collection settings, confirm `base_url` is set to `http://127.0.0.1:8000`.
-4. Open the **Authentication** folder:
-   - Run **1. Login as Owner**. The test script automatically saves the returned token into `bearer_token`.
-5. Run requests in the **Items** and **Customers** folders:
-   - All requests automatically use the `bearer_token` collection variable.
-   - Creating an item or customer automatically populates `{{item_id}}` and `{{customer_id}}` for subsequent view, update, and delete tests.
-6. To test **403 Forbidden** restrictions:
-   - Run **3. Login as Cashier**.
-   - Attempt **7. Delete Item - Restriction Probe (Manager/Cashier 403)** or **3. Create Item** to verify permission rejection.
+4. Run **1. Login as Owner**, **2. Login as Manager**, and **3. Login as Cashier**. Each test script saves its token in a separate collection variable.
+5. Run the **Items** and **Customers** folders in order. Create requests save their generated IDs; customer creation uses a unique email for repeatable runs.
+6. Explicit cashier item-creation and manager/cashier deletion requests expect `403 Forbidden`; owner deletion requests expect success.
+7. **Logout** is the final collection request so it does not revoke a token before later protected requests use it.
+
+The collection was structurally inspected but not executed in Postman/Newman during this audit because neither runner is installed.
 
 ---
 
@@ -513,18 +512,19 @@ ScoopsHub/
 │       ├── DatabaseSeeder.php              # Main database seeder
 │       └── UserSeeder.php                  # Owner, manager, cashier seeder
 ├── docs/
-│   ├── er-diagram.md                       # Complete Mermaid ER diagram source & schema specs
+│   ├── ScoopsHub-Submission-Document.md    # Submission summary
+│   ├── er-diagram.md                       # Mermaid ER diagram and schema specs
 │   ├── er-diagram.png                      # Visual schema diagram
-│   └── ScoopsHub.postman_collection.json   # Postman v2.1 test collection
+│   └── ScoopsHub.postman_collection.json   # Postman v2.1 collection
 ├── routes/
 │   └── api.php                             # API routes, auth groups, and RBAC probes
 ├── tests/
 │   ├── Feature/
 │   │   ├── Auth/                           # Login, auth, and role verification tests
-│   │   ├── CustomerApiTest.php             # Customer CRUD & permission tests (27 tests)
-│   │   └── ItemApiTest.php                 # Item CRUD & permission tests (29 tests)
+│   │   ├── CustomerApiTest.php             # Customer CRUD, validation & permission tests
+│   │   └── ItemApiTest.php                 # Item CRUD, validation & permission tests
 │   └── TestCase.php                        # Base test case
 ├── .env.example                            # Safe development configuration template
 ├── phpunit.xml                             # PHPUnit test configuration (SQLite in-memory)
-└── README.md                               # Comprehensive documentation
+└── README.md                               
 ```
