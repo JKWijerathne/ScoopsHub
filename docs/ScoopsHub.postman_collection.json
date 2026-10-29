@@ -1,0 +1,1463 @@
+{
+  "info": {
+    "_postman_id": "e58fa26b-12d4-4bb5-953b-e1b9f71c4c92",
+    "name": "ScoopsHub API",
+    "description": "Official Postman Collection for ScoopsHub REST API (Delivergate Backend Engineer Intern Practical Exam).\n\n### Overview\nScoopsHub is an ice cream parlour management API built with Laravel 13, MySQL, and Laravel Sanctum.\n\n### Getting Started\n1. Ensure the local server is running at `http://127.0.0.1:8000` (or update `base_url`).\n2. Open the **Authentication** folder and send **Login as Owner** (or Manager/Cashier).\n3. The test script automatically captures the returned token and stores it in the `bearer_token` collection variable.\n4. Subsequent requests in **Items** and **Customers** folders use `{{bearer_token}}` automatically.\n5. When testing role-restricted operations (e.g. DELETE requires Owner), switch your active user by running the corresponding Login request.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string",
+      "description": "Local API server base URL"
+    },
+    {
+      "key": "bearer_token",
+      "value": "",
+      "type": "string",
+      "description": "Sanctum bearer token populated automatically upon login"
+    },
+    {
+      "key": "item_id",
+      "value": "1",
+      "type": "string",
+      "description": "Item ID used for show, update, and delete tests. Populated by Create Item."
+    },
+    {
+      "key": "customer_id",
+      "value": "1",
+      "type": "string",
+      "description": "Customer ID used for show, update, and delete tests. Populated by Create Customer."
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Endpoints for Sanctum token-based authentication and user verification.",
+      "item": [
+        {
+          "name": "1. Login as Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has Sanctum token and Bearer type\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"token\");",
+                  "    pm.expect(json.token_type).to.eql(\"Bearer\");",
+                  "    pm.expect(json.user.role).to.eql(\"owner\");",
+                  "    pm.collectionVariables.set(\"bearer_token\", json.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@scoopshub.test\",\n  \"password\": \"Owner123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates as Owner. The test script saves the Sanctum bearer token to `{{bearer_token}}`."
+          }
+        },
+        {
+          "name": "2. Login as Manager",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has Sanctum token and Manager role\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"token\");",
+                  "    pm.expect(json.user.role).to.eql(\"manager\");",
+                  "    pm.collectionVariables.set(\"bearer_token\", json.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"manager@scoopshub.test\",\n  \"password\": \"Manager123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates as Manager. Stores the token in `{{bearer_token}}` to test management permissions."
+          }
+        },
+        {
+          "name": "3. Login as Cashier",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has Sanctum token and Cashier role\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"token\");",
+                  "    pm.expect(json.user.role).to.eql(\"cashier\");",
+                  "    pm.collectionVariables.set(\"bearer_token\", json.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cashier@scoopshub.test\",\n  \"password\": \"Cashier123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates as Cashier. Stores the token in `{{bearer_token}}` to test cashier permissions."
+          }
+        },
+        {
+          "name": "4. Login with Invalid Credentials (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Returns error message 'Invalid credentials'\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Invalid credentials\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@scoopshub.test\",\n  \"password\": \"WrongPassword999!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Verifies invalid login rejection with HTTP 401."
+          }
+        },
+        {
+          "name": "5. Login Validation - Missing Fields (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 422 Unprocessable Content\", function () {",
+                  "    pm.response.to.have.status(422);",
+                  "});",
+                  "",
+                  "pm.test(\"Validation errors contain password\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"errors\");",
+                  "    pm.expect(json.errors).to.have.property(\"password\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@scoopshub.test\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Verifies input validation on missing password."
+          }
+        },
+        {
+          "name": "6. Get Authenticated User Details (/api/auth/me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Returns authenticated user payload\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"user\");",
+                  "    pm.expect(json.user).to.have.property(\"id\");",
+                  "    pm.expect(json.user).to.have.property(\"email\");",
+                  "    pm.expect(json.user).to.have.property(\"role\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Returns currently authenticated user profile."
+          }
+        },
+        {
+          "name": "7. Backward Compatible User Endpoint (/api/user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Returns user model directly\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"id\");",
+                  "    pm.expect(json).to.have.property(\"email\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user"
+              ]
+            },
+            "description": "Legacy Sanctum user endpoint maintained for compatibility."
+          }
+        },
+        {
+          "name": "8. Logout (Revoke Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Logged out message returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Logged out successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Revokes the active bearer token. Subsequent calls with this token will return 401."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Items",
+      "description": "Endpoints for inventory items (ice cream flavours, tubs, cones, toppings).",
+      "item": [
+        {
+          "name": "1. List All Items",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains data array\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"data\");",
+                  "    pm.expect(Array.isArray(json.data)).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items"
+              ]
+            },
+            "description": "Lists all parlour items. Allowed for Owner, Manager, and Cashier."
+          }
+        },
+        {
+          "name": "2. Search Items by Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Filtered results returned in data array\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"data\");",
+                  "    pm.expect(Array.isArray(json.data)).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/items?search=Chocolate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Chocolate",
+                  "description": "Case-insensitive partial search term"
+                }
+              ]
+            },
+            "description": "Filters items whose name contains the search term."
+          }
+        },
+        {
+          "name": "3. Create Item (Owner/Manager)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Item created and ID saved to collection variable\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Item created successfully\");",
+                  "    pm.expect(json.data).to.have.property(\"id\");",
+                  "    pm.collectionVariables.set(\"item_id\", json.data.id.toString());",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Belgian Dark Chocolate Gelato\",\n  \"description\": \"Rich 70% cocoa artisanal dark chocolate gelato\",\n  \"price\": 450,\n  \"stock_quantity\": 25\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items"
+              ]
+            },
+            "description": "**Creates a record.** Permitted for Owner and Manager. Automatically updates the `{{item_id}}` variable."
+          }
+        },
+        {
+          "name": "4. View Item by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Returns single item details\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"data\");",
+                  "    pm.expect(json.data.id.toString()).to.eql(pm.collectionVariables.get(\"item_id\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/items/{{item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{item_id}}"
+              ]
+            },
+            "description": "Fetches details of an item by ID using `{{item_id}}`."
+          }
+        },
+        {
+          "name": "5. Full Update Item (PUT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Item updated successfully\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Item updated successfully\");",
+                  "    pm.expect(json.data.name).to.eql(\"Belgian Dark Chocolate Deluxe\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Belgian Dark Chocolate Deluxe\",\n  \"description\": \"Rich 70% dark chocolate gelato with toasted almond slivers\",\n  \"price\": 480,\n  \"stock_quantity\": 30\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/items/{{item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{item_id}}"
+              ]
+            },
+            "description": "**Updates record (full replace).** Permitted for Owner, Manager, and Cashier."
+          }
+        },
+        {
+          "name": "6. Partial Update Item (PATCH)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Item partial fields updated\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Item updated successfully\");",
+                  "    pm.expect(json.data.stock_quantity).to.eql(45);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stock_quantity\": 45\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/items/{{item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{item_id}}"
+              ]
+            },
+            "description": "**Updates record (partial).** Permitted for all roles."
+          }
+        },
+        {
+          "name": "7. Delete Item - Restriction Probe (Manager/Cashier 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden for non-owners\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "pm.test(\"Message contains Forbidden notice\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.include(\"Forbidden\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/items/{{item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{item_id}}"
+              ]
+            },
+            "description": "Run this while logged in as Cashier or Manager to confirm deletion is blocked with HTTP 403."
+          }
+        },
+        {
+          "name": "8. Delete Item as Owner (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Item deleted message returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Item deleted successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/items/{{item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{item_id}}"
+              ]
+            },
+            "description": "**Deletes record.** Must be logged in as Owner."
+          }
+        },
+        {
+          "name": "9. View Missing Item (404 Not Found)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Item not found message returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Item not found\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/items/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "999999"
+              ]
+            },
+            "description": "Confirms non-existent ID yields HTTP 404."
+          }
+        },
+        {
+          "name": "10. Create Item - Validation Failure (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 422 Unprocessable Content\", function () {",
+                  "    pm.response.to.have.status(422);",
+                  "});",
+                  "",
+                  "pm.test(\"Validation errors list invalid fields\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"errors\");",
+                  "    pm.expect(json.errors).to.have.property(\"name\");",
+                  "    pm.expect(json.errors).to.have.property(\"price\");",
+                  "    pm.expect(json.errors).to.have.property(\"stock_quantity\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"price\": -50,\n  \"stock_quantity\": -10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "items"
+              ]
+            },
+            "description": "Tests rejection of blank name, negative price, and negative stock quantity."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "description": "Endpoints for customer management (names, contact emails, phone numbers).",
+      "item": [
+        {
+          "name": "1. List All Customers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains data array\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"data\");",
+                  "    pm.expect(Array.isArray(json.data)).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "customers"
+              ]
+            },
+            "description": "Lists all parlour customers. Allowed for Owner, Manager, and Cashier."
+          }
+        },
+        {
+          "name": "2. Search Customers by Name or Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Filtered results returned in data array\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"data\");",
+                  "    pm.expect(Array.isArray(json.data)).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customers?search=Kamal",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Kamal",
+                  "description": "Search term matching name or email"
+                }
+              ]
+            },
+            "description": "Filters customers whose name or email matches the search query."
+          }
+        },
+        {
+          "name": "3. Create Customer (All Roles)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer created and ID saved to collection variable\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Customer created successfully\");",
+                  "    pm.expect(json.data).to.have.property(\"id\");",
+                  "    pm.collectionVariables.set(\"customer_id\", json.data.id.toString());",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kamal Perera\",\n  \"email\": \"kamal.perera@example.com\",\n  \"phone\": \"0771234567\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "customers"
+              ]
+            },
+            "description": "**Creates a record.** Permitted for Owner, Manager, and Cashier. Saves ID to `{{customer_id}}`."
+          }
+        },
+        {
+          "name": "4. View Customer by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Returns customer details matching variable ID\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"data\");",
+                  "    pm.expect(json.data.id.toString()).to.eql(pm.collectionVariables.get(\"customer_id\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customers/{{customer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                "{{customer_id}}"
+              ]
+            },
+            "description": "Fetches details of a single customer using `{{customer_id}}`."
+          }
+        },
+        {
+          "name": "5. Full Update Customer (PUT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer details fully updated\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Customer updated successfully\");",
+                  "    pm.expect(json.data.name).to.eql(\"Kamal D. Perera\");",
+                  "    pm.expect(json.data.phone).to.eql(\"0779998888\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kamal D. Perera\",\n  \"email\": \"kamal.perera@example.com\",\n  \"phone\": \"0779998888\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/customers/{{customer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                "{{customer_id}}"
+              ]
+            },
+            "description": "**Updates record (full replace).** Allowed for all roles. Verifies that retaining own email does not trigger a duplicate error."
+          }
+        },
+        {
+          "name": "6. Partial Update Customer (PATCH)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer partial field updated\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Customer updated successfully\");",
+                  "    pm.expect(json.data.phone).to.eql(\"0770001111\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"0770001111\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/customers/{{customer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                "{{customer_id}}"
+              ]
+            },
+            "description": "**Updates record (partial).** Updates only specific attributes."
+          }
+        },
+        {
+          "name": "7. Delete Customer - Restriction Probe (Manager/Cashier 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden for non-owners\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "pm.test(\"Message contains Forbidden notice\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.include(\"Forbidden\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customers/{{customer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                "{{customer_id}}"
+              ]
+            },
+            "description": "Run this while logged in as Cashier or Manager to confirm customer deletion is rejected with HTTP 403."
+          }
+        },
+        {
+          "name": "8. Delete Customer as Owner (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer deleted message returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Customer deleted successfully\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customers/{{customer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                "{{customer_id}}"
+              ]
+            },
+            "description": "**Deletes record.** Must be logged in as Owner."
+          }
+        },
+        {
+          "name": "9. View Missing Customer (404 Not Found)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer not found message returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql(\"Customer not found\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customers/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                "999999"
+              ]
+            },
+            "description": "Confirms non-existent customer ID returns HTTP 404."
+          }
+        },
+        {
+          "name": "10. Create Customer - Validation Failure (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 422 Unprocessable Content\", function () {",
+                  "    pm.response.to.have.status(422);",
+                  "});",
+                  "",
+                  "pm.test(\"Validation errors list missing name and bad email\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"errors\");",
+                  "    pm.expect(json.errors).to.have.property(\"name\");",
+                  "    pm.expect(json.errors).to.have.property(\"email\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"email\": \"not-a-valid-email-address\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "customers"
+              ]
+            },
+            "description": "Tests rejection of empty customer name and invalid email format."
+          }
+        }
+      ]
+    }
+  ]
+}
