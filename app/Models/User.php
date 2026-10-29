@@ -30,4 +30,33 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Determine if the user has any of the given roles.
+     *
+     * @param  string|array<string>  $roles
+     */
+    public function hasRole(string|array $roles): bool
+    {
+        if (is_string($roles)) {
+            $roles = array_map('trim', explode(',', $roles));
+        }
+
+        return in_array($this->role, $roles, true);
+    }
+
+    public function isOwner(): bool
+    {
+        return $this->role === 'owner';
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === 'manager';
+    }
+
+    public function isCashier(): bool
+    {
+        return $this->role === 'cashier';
+    }
 }

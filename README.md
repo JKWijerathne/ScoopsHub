@@ -1,3 +1,152 @@
+# ScoopsHub
+
+ScoopsHub is an ice cream parlor management system backend built with Laravel and MySQL for the Delivergate Backend Engineer Intern Practical Exam.
+
+## Database Setup & Configuration
+
+### Prerequisites
+- PHP >= 8.3 with `pdo_mysql` enabled
+- Composer >= 2.x
+- MySQL server (e.g., via Laragon) running on `127.0.0.1:3306`
+
+### Environment Configuration
+1. Copy `.env.example` to `.env` if not already present:
+   ```sh
+   cp .env.example .env
+   ```
+2. Verify or update the MySQL database configuration in `.env`:
+   ```env
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=scoopshub
+   DB_USERNAME=root
+   DB_PASSWORD=
+   ```
+3. Generate the application key if not already generated:
+   ```sh
+   php artisan key:generate
+   ```
+
+### Running Migrations
+Run all database migrations to establish the schema:
+```sh
+php artisan migrate
+```
+
+### Starting Development Server
+Start the local Laravel development server:
+```sh
+php artisan serve
+```
+By default, the API will be available at `http://127.0.0.1:8000`.
+
+## API Authentication & Authorization (Phase 3)
+
+### Overview
+Authentication is implemented via **Laravel Sanctum** personal access tokens. Role-based authorization is enforced on the backend via the `EnsureUserHasRole` middleware (alias: `role`). Unauthenticated requests to API endpoints return HTTP `401 Unauthorized` as JSON.
+
+### Endpoints
+
+#### 1. Login
+- **Method & URL:** `POST /api/auth/login`
+- **Access:** Public
+- **Headers:** `Content-Type: application/json`, `Accept: application/json`
+- **Request Body:**
+  ```json
+  {
+    "email": "owner@scoopshub.test",
+    "password": "Owner123!"
+  }
+  ```
+- **Responses:**
+  - `200 OK` (Success):
+    ```json
+    {
+      "message": "Login successful",
+      "token": "1|abcdef123456...",
+      "token_type": "Bearer",
+      "user": {
+        "id": 1,
+        "name": "ScoopsHub Owner",
+        "email": "owner@scoopshub.test",
+        "role": "owner"
+      }
+    }
+    ```
+  - `401 Unauthorized` (Invalid credentials):
+    ```json
+    {
+      "message": "Invalid credentials"
+    }
+    ```
+  - `422 Unprocessable Entity` (Validation failure):
+    ```json
+    {
+      "message": "The email field is required.",
+      "errors": {
+        "email": ["The email field is required."]
+      }
+    }
+    ```
+
+#### 2. Authenticated User Profile
+- **Method & URL:** `GET /api/auth/me` (or `GET /api/user`)
+- **Access:** Authenticated (Bearer Token required)
+- **Header:** `Authorization: Bearer <token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "user": {
+      "id": 1,
+      "name": "ScoopsHub Owner",
+      "email": "owner@scoopshub.test",
+      "role": "owner"
+    }
+  }
+  ```
+
+#### 3. Logout
+- **Method & URL:** `POST /api/auth/logout`
+- **Access:** Authenticated (Bearer Token required)
+- **Header:** `Authorization: Bearer <token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "message": "Logged out successfully"
+  }
+  ```
+  *(Revokes the current access token only, without invalidating tokens on other client devices.)*
+
+### Roles & Permissions Matrix
+The application defines three roles: `owner`, `manager`, and `cashier`. Role checks are applied via the `role:<roles>` middleware.
+
+| Permission | Owner | Manager | Cashier |
+|---|---|---|---|
+| View items | Yes | Yes | Yes |
+| Create items | Yes | Yes | No |
+| Update items | Yes | Yes | Yes |
+| Delete items | Yes | No | No |
+| View customers | Yes | Yes | Yes |
+| Create customers | Yes | Yes | Yes |
+| Update customers | Yes | Yes | Yes |
+| Delete customers | Yes | No | No |
+
+- Authenticated users without the required role receive `403 Forbidden` (`{"message": "Forbidden. You do not have permission to access this resource."}`).
+- Unauthenticated requests receive `401 Unauthorized` (`{"message": "Unauthenticated."}`).
+
+### Running Automated Tests
+Run the PHPUnit feature test suite covering login, token authentication, and role authorization:
+```sh
+php artisan test
+```
+
+### Known Limitations
+- Item and customer CRUD operations belong to the next phase (Phase 4). Role authorization middleware is registered and ready to protect those controllers.
+- Tokens currently have no automatic expiration configured (`config/sanctum.php` default); token lifetime can be customized if needed.
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
